@@ -4,7 +4,8 @@ source _setenv.sh
 export COMMON="../_common"
 
 if [ "$RUN_LOCALLY" == "true" ]; then
-	echo " Start the server"
+	echo " (Re)start the server"
+	./_stop-server.sh
 	./_start-server.sh
 fi
 
