@@ -1,4 +1,5 @@
 #Create Space
+```
 POST /api/spaces
 Authorization: Bearer <TOKEN>
 Content-Type: application/json
@@ -12,16 +13,24 @@ Content-Type: application/json
     }
   }
 }
-----
-SPACE_ID = JSON["data"]["id"]
+```
+---
+```
+SPACE_ID = JSON["data"]["id"]`
+```
 
 #Get Space
+```
 GET /api/spaces/<SPACE_ID>
+```
 
 #List Workitems
+```
 GET /api/spaces/<SPACE_ID>/workitems
+```
 
 #Create Workitem (Scenario)
+```
 POST /api/spaces/<SPACE_ID>/workitems
 Authorization: Bearer <TOKEN>
 Content-Type: application/json
@@ -43,13 +52,19 @@ Content-Type: application/json
     }
   }
 }
+```
 ---
+```
 SCENARIO_ID = JSON["data"]["id"]
+```
 
 #Read Scenario
+```
 GET /api/workitems/<SCENARIO_ID>
+```
 
 #Update Scenario state
+```
 PATCH /api/workitems/<SCENARIO_ID>
 Authorization: Bearer <TOKEN>
 Content-Type: application/json
@@ -72,10 +87,12 @@ Content-Type: application/json
     }
   }
 }
+```
 
 #TODO: Create Scenario's Expecience (child)
 
 #Delete space
+```
 DELETE /api/space/<SPACE_ID>
 Authorization: Bearer <TOKEN>
-
+```
