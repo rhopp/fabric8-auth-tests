@@ -136,6 +136,8 @@ fi
 
 if [ "$RUN_LOCALLY" == "true" ]; then
 	echo " Stop the server"
+	CORE_LOG=$JOB_BASE_NAME-$BUILD_NUMBER-core.log
+	docker logs plannerwitcrud_core_1 2>$CORE_LOG > $CORE_LOG
 	./_stop-server.sh
 fi
 
