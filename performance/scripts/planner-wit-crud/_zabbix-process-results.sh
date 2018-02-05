@@ -5,8 +5,6 @@ source _setenv.sh
 export ZABBIX_LOG=$1
 export ZABBIX_TIMESTAMP=`date +%s`
 
-./__zabbix-process-login.sh >> $ZABBIX_LOG
-
 ./__zabbix-process-load.sh '"GET","api-spaces"' "api-spaces" >> $ZABBIX_LOG
 ./__zabbix-process-load.sh '"POST","api-space-create"' "api-space-create" >> $ZABBIX_LOG
 ./__zabbix-process-load.sh '"POST","api-workitem-create"' "api-workitem-create" >> $ZABBIX_LOG

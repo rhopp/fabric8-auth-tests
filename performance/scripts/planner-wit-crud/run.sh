@@ -3,6 +3,11 @@ source _setenv.sh
 
 export COMMON="../_common"
 
+if [ "$RUN_LOCALLY" == "true" ]; then
+	echo " Start the server"
+	./_start-server.sh
+fi
+
 echo " Wait for the server to become available"
 ./_wait-for-server.sh
 if [ $? -gt 0 ]; then
@@ -10,84 +15,25 @@ if [ $? -gt 0 ]; then
 fi
 
 echo " Login users and get auth tokens"
-export TOKENS_FILE=user.tokens
 rm -rf $TOKENS_FILE
 ./_generate-auth-tokens.sh $TOKENS_FILE
 
-if [ "$RUN_LOCALLY" != "true" ]; then
-	echo "#!/bin/bash
-export USER_TOKENS=\"0;0\"
-" > $ENV_FILE-master;
-
-	TOKEN_COUNT=`cat $TOKENS_FILE | wc -l`
-	i=1
-	s=1
-	rm -rf $TOKENS_FILE-slave-*;
-	if [ $TOKEN_COUNT -ge $SLAVES ]; then
-		while [ $i -le $TOKEN_COUNT ]; do
-			sed "${i}q;d" $TOKENS_FILE >> $TOKENS_FILE-slave-$s;
-			i=$((i+1));
-			if [ $s -lt $SLAVES ]; then
-				s=$((s+1));
-			else
-				s=1;
-			fi;
-		done;
-	else
-		while [ $s -le $SLAVES ]; do
-			sed "${i}q;d" $TOKENS_FILE >> $TOKENS_FILE-slave-$s;
-			s=$((s+1));
-			if [ $i -lt $TOKEN_COUNT ]; then
-				i=$((i+1));
-			else
-				i=1;
-			fi;
-		done;
-	fi
-	for s in $(seq 1 $SLAVES); do
-		echo "#!/bin/bash
-export USER_TOKENS=\"$(cat $TOKENS_FILE-slave-$s)\"
-" > $ENV_FILE-slave-$s;
-	done
-else
-	echo "#!/bin/bash
+echo "#!/bin/bash
 export USER_TOKENS=\"`cat $TOKENS_FILE`\"
 " > $ENV_FILE-master;
-fi
 
 echo " Prepare locustfile template"
 ./_prepare-locustfile.sh planner-wit-crud.py
 
-if [ "$RUN_LOCALLY" != "true" ]; then
-	echo " Shut Locust master down"
-	$COMMON/__stop-locust-master.sh
+echo " Shut any possible Locust master down"
+$COMMON/__stop-locust-master-standalone.sh
+echo " Run Locust locally"
+$COMMON/__start-locust-master-standalone.sh
 
-	echo " Shut Locust slaves down"
-	SLAVES=10 $COMMON/__stop-locust-slaves.sh
-
-	echo " Start Locust master waiting for slaves"
-	$COMMON/__start-locust-master.sh
-
-	echo " Start all the Locust slaves"
-	$COMMON/__start-locust-slaves.sh
-else
-	echo " Shut Locust master down"
-	$COMMON/__stop-locust-master-standalone.sh
-	echo " Run Locust locally"
-	$COMMON/__start-locust-master-standalone.sh
-fi
 echo " Run test for $DURATION seconds"
-
 sleep $DURATION
-if [ "$RUN_LOCALLY" != "true" ]; then
-	echo " Shut Locust master down"
-	$COMMON/__stop-locust-master.sh TERM
 
-	echo " Download locust reports from Locust master"
-	$COMMON/_gather-locust-reports.sh
-else
-	$COMMON/__stop-locust-master-standalone.sh TERM
-fi
+$COMMON/__stop-locust-master-standalone.sh TERM
 
 echo " Extract CSV data from logs"
 $COMMON/_locust-log-to-csv.sh 'GET api-spaces' $JOB_BASE_NAME-$BUILD_NUMBER-locust-master.log
@@ -100,7 +46,7 @@ $COMMON/_locust-log-to-csv.sh 'DELETE api-space-delete' $JOB_BASE_NAME-$BUILD_NU
 echo " Generate charts from CSV"
 export REPORT_CHART_WIDTH=1000
 export REPORT_CHART_HEIGHT=600
-for c in $(find *.csv | grep '\-POST_\+\|\-GET_\+|\-PATCH_\+|\-DELETE_\+'); do echo $c; $COMMON/_csv-response-time-to-png.sh $c; $COMMON/_csv-throughput-to-png.sh $c; $COMMON/_csv-failures-to-png.sh $c; done
+for c in $(find *.csv | grep '\-POST_\+\|\-GET_\+\|\-PATCH_\+\|\-DELETE_\+'); do echo $c; $COMMON/_csv-response-time-to-png.sh $c; $COMMON/_csv-throughput-to-png.sh $c; $COMMON/_csv-failures-to-png.sh $c; done
 function distribution_2_csv {
 	HEAD=(`cat $1 | head -n 1 | sed -e 's,",,g' | sed -e 's, ,_,g' | sed -e 's,%,,g' | tr "," " "`)
 	DATA=(`cat $1 | grep -F "$2" | sed -e 's,",,g' | sed -e 's, ,_,g' | tr "," " "`)
@@ -187,9 +133,9 @@ else
 	grip --user=$GRIP_USER --pass=$GRIP_PASS --export $REPORT_FILE
 fi
 
-if [ "$RUN_LOCALLY" != "true" ]; then
-	echo " Shut Locust slaves down"
-	$COMMON/__stop-locust-slaves.sh
+if [ "$RUN_LOCALLY" == "true" ]; then
+	echo " Stop the server"
+	./_stop-server.sh
 fi
 
 echo " Check for errors in Locust master log"
